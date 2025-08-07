@@ -1,0 +1,8 @@
+@import "tailwindcss";
+.custom-toast {
+  background-color: #064e3b !important;
+  color: white !important;
+  font-weight: bold;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
