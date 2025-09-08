@@ -3,7 +3,9 @@ import { FaGoogle, FaGithub, FaPinterestP } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import axios from 'axios'
+import axios from "axios";
+import { useDispatch } from "react-redux";
+import { login } from "./Redux/authSlice"; // 👈 import login action
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -12,7 +14,7 @@ const Login = () => {
   });
 
   const navigate = useNavigate();
-  console.log("This is form data", formData)
+  const dispatch = useDispatch();
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -24,21 +26,26 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData)
+      const res = await axios.post("http://localhost:5000/api/auth/login", formData);
 
       if (!res.data.token) {
-        toast.error(data.error.message || "Login failed");
+        toast.error(res.data.error?.message || "Login failed");
         return;
       }
 
-      toast.success("Login Sucesfull");
-      localStorage.setItem("token", res.data.token)
-      // localStorage.setItem("user", res.data.user) // if it compulsary
+      toast.success("Login Successful ✅");
 
-      navigate('/')
+      // 👇 Redux + localStorage update
+      dispatch(
+        login({
+          user: res.data.user, // backend se aapko user object milna chahiye
+          token: res.data.token,
+        })
+      );
 
+      navigate("/"); // home page par redirect
     } catch (err) {
-      toast.error("Something went wrong");
+      toast.error("Something went wrong ❌");
     }
   };
 
@@ -62,7 +69,7 @@ const Login = () => {
 
           <motion.p
             className="text-sm text-gray-500 mb-6"
-            initial={{ opacity: 0 }} 
+            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >

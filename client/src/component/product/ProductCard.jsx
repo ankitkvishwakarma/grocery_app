@@ -1,6 +1,11 @@
 import React from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCartAsync } from "../../redux/cartSlice"; // ✅ सही import
 
 const ProductCard = ({ product }) => {
+  const dispatch = useDispatch();
+  const userId = useSelector((state) => state.auth.user?._id); // ✅ logged-in user ki id
+
   const {
     image,
     name,
@@ -11,10 +16,20 @@ const ProductCard = ({ product }) => {
     isNew,
     isOutOfStock,
     discount,
+    _id, // ✅ product ki id
   } = product;
 
+  // Add to cart handler
+  const handleAddToCart = () => {
+    if (!userId) {
+      alert("Please login to add items to cart!");
+      return;
+    }
+    dispatch(addToCartAsync({ userId, productId: _id, quantity: 1 }));
+  };
+
   return (
-    <div className=" p-4 relative hover:shadow-lg transition duration-200">
+    <div className="p-4 relative hover:shadow-lg transition duration-200">
       {/* Discount or Stock Status Badge */}
       {isOutOfStock ? (
         <span className="absolute top-2 left-2 bg-green-200 text-green-800 text-xs font-bold px-2 py-1 rounded">
@@ -33,11 +48,7 @@ const ProductCard = ({ product }) => {
       )}
 
       {/* Product Image */}
-      <img
-        src={image}
-        alt={name}
-        className="w-full h-40 object-contain mb-4"
-      />
+      <img src={image} alt={name} className="w-full h-40 object-contain mb-4" />
 
       {/* Product Details */}
       <p className="text-xs text-gray-400">{category}</p>
@@ -46,7 +57,9 @@ const ProductCard = ({ product }) => {
 
       {/* Pricing */}
       <div className="flex items-center gap-2 text-sm mb-3">
-        <span className="text-green-600 font-semibold">${discountedPrice}</span>
+        <span className="text-green-600 font-semibold">
+          ${discountedPrice}
+        </span>
         {discount && (
           <span className="text-gray-400 line-through">${originalPrice}</span>
         )}
@@ -54,6 +67,7 @@ const ProductCard = ({ product }) => {
 
       {/* Add Button */}
       <button
+        onClick={handleAddToCart} // ✅ Add handler lagaya
         className={`w-full text-center py-1.5 rounded font-medium text-sm transition ${
           isOutOfStock
             ? "bg-gray-300 text-gray-600 cursor-not-allowed"

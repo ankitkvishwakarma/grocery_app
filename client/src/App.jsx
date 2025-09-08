@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from "react-toastify";
+import { Provider } from "react-redux";
 import axios from "axios";
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -27,6 +28,7 @@ import Wishlist from "./component/Wishlist";
 import PageNotfound from "./component/PageNotfound";
 import ProductGrid from "./component/ProductGrid";
 import DairyBreadEggs from './component/DairyProduct/DairyBreadEggs';
+import store from "./redux/store";
 
 
 function App() {
@@ -41,6 +43,10 @@ function App() {
     <>
       <Header />
       <ToastContainer position="top-right" autoClose={3000} />
+      {/* <Provider store={store}>
+       
+        <Login />
+      </Provider> */}
       <Routes>
         <Route path="/" element={<>
           <HeroBanner />
@@ -51,7 +57,7 @@ function App() {
           <PopularProducts />
           <StateSection />
           <Newslatter />
-          
+
           {/* <ProductGrid/> */}
 
 

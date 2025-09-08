@@ -1,30 +1,36 @@
-import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import {
-  removeFromCart,
-  changeQuantity,
+  fetchCart,
+  addToCartAsync,
+  removeFromCartAsync,
   applyCoupon,
-  clearCart
-} from '../redux/cartSlice';
-import { useNavigate } from 'react-router-dom'; // <-- Add this if using routing
+  clearCartAsync
+} from "../redux/cartSlice";
+import { useNavigate } from "react-router-dom";
+
 
 const CartPage = () => {
   const { items, discount, couponApplied } = useSelector((state) => state.cart);
   const dispatch = useDispatch();
-  const [couponCode, setCouponCode] = useState('');
-  const navigate = useNavigate(); // <-- Required for routing to checkout page
+  const [couponCode, setCouponCode] = useState("");
+  const navigate = useNavigate();
 
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  useEffect(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
+
+  const totalPrice = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const discountedPrice = totalPrice - (totalPrice * discount) / 100;
 
-  const handleQuantityChange = (id, amount) => {
-    if (amount > 0) {
-      dispatch(changeQuantity({ id, quantity: amount }));
+  const handleQuantityChange = (productId, newQty) => {
+    if (newQty > 0) {
+      dispatch(addToCartAsync({ productId, quantity: newQty }));
     }
   };
 
-  const handleRemove = (id) => {
-    dispatch(removeFromCart(id));
+  const handleRemove = (productId) => {
+    dispatch(removeFromCartAsync(productId));
   };
 
   const handleApplyCoupon = () => {
@@ -32,11 +38,11 @@ const CartPage = () => {
   };
 
   const handleClearCart = () => {
-    dispatch(clearCart());
+    dispatch(clearCartAsync());
   };
 
   const handleCheckout = () => {
-    navigate('/checkout'); // Adjust route path if needed
+    navigate("/checkout");
   };
 
   return (
@@ -48,28 +54,28 @@ const CartPage = () => {
       ) : (
         <>
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between py-3 border-b">
+            <div key={item.product._id} className="flex items-center justify-between py-3 border-b">
               <div>
-                <h2 className="font-semibold">{item.name}</h2>
-                <p className="text-sm text-gray-500">₹{item.price} x {item.quantity}</p>
+                <h2 className="font-semibold">{item.product.name}</h2>
+                <p className="text-sm text-gray-500">₹{item.product.price} x {item.quantity}</p>
               </div>
               <div className="flex gap-2 items-center">
                 <button
                   className="px-2 py-1 bg-gray-200 rounded"
-                  onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                  onClick={() => handleQuantityChange(item.product._id, item.quantity - 1)}
                 >
                   -
                 </button>
                 <span>{item.quantity}</span>
                 <button
                   className="px-2 py-1 bg-gray-200 rounded"
-                  onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                  onClick={() => handleQuantityChange(item.product._id, item.quantity + 1)}
                 >
                   +
                 </button>
                 <button
                   className="ml-4 px-2 py-1 bg-red-500 text-white rounded"
-                  onClick={() => handleRemove(item.id)}
+                  onClick={() => handleRemove(item.product._id)}
                 >
                   Remove
                 </button>
@@ -108,7 +114,7 @@ const CartPage = () => {
               onClick={handleClearCart}
               className="px-6 py-2 bg-lime-700 text-white rounded"
             >
-              Clear Cart
+              Clear Cart (Place Order)
             </button>
             <button
               onClick={handleCheckout}

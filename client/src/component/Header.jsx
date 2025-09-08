@@ -1,20 +1,53 @@
-import React, { useState } from "react";
-import { FaSearch, FaHeart, FaShoppingCart, FaUser } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { FaSearch, FaShoppingCart, FaUser, FaUserCircle } from "react-icons/fa";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { MdClose } from "react-icons/md";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSelector } from "react-redux";
-import { cartCount } from "../redux/Selector";
-import UserLocation from './Header/UserLocation'; // Import UserLocation component
-import CustomCategoryDropdown from "./Header/CustomCategoryDropdown"; // Import custom dropdown component
+import { useSelector, useDispatch } from "react-redux";
+import { login, logout } from "../redux/authSlice";
+import CustomCategoryDropdown from "./Header/CustomCategoryDropdown";
+import { loadUserFromStorage } from "../redux/authSlice";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-   // gets full cart object
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
   const cartItems = useSelector((state) => state.cart.items);
   const totalCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  const { isLoggedIn, user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // 🟢 Logout Function
+  const handleLogout = () => {
+    dispatch(logout());
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
+    navigate("/userlogin");
+  };
+
+  // 🟢 Auto login check (localStorage -> Redux)
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    const savedUser = localStorage.getItem("user");
+    if (token && savedUser) {
+      dispatch(login({ user: JSON.parse(savedUser), token })),loadUserFromStorage();
+    }
+  }, [dispatch]);
+
+  const navLinks = [
+    { label: "Home", path: "/" },
+    { label: "Shop", path: "/ProductGrid" },
+    { label: "Fruits", path: "/fruits" },
+    { label: "Vegetables", path: "/vegetables" },
+    { label: "Beverages", path: "/beverages" },
+    { label: "About Us", path: "/about" },
+    { label: "Blogs", path: "/blogs" },
+  ];
 
   return (
     <header className="bg-green-700 text-white shadow-md">
@@ -36,7 +69,6 @@ const Navbar = () => {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          {/* Category Dropdown */}
           <div className="relative flex items-center w-full">
             <div className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10">
               <CustomCategoryDropdown />
@@ -49,35 +81,58 @@ const Navbar = () => {
           </div>
         </motion.div>
 
-
         {/* Icons - Desktop */}
         <motion.div
           className="hidden md:flex items-center gap-4 text-lg"
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Link to="/wishlist">
-            <motion.div whileHover={{ scale: 1.2 }} className="cursor-pointer">
-              <FaHeart />
-            </motion.div>
-          </Link>
-
+          {/* Cart */}
           <Link to="/cart">
             <motion.div whileHover={{ scale: 1.2 }} className="cursor-pointer relative">
               <FaShoppingCart size={24} />
-               {totalCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full animate-bounce">
-              {totalCount}
-            </span>
-            )}
+              {totalCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full animate-bounce">
+                  {totalCount}
+                </span>
+              )}
             </motion.div>
           </Link>
 
-          <Link to="/userlogin">
-            <motion.div whileHover={{ scale: 1.2 }}>
-              <FaUser className="cursor-pointer" />
-            </motion.div>
-          </Link>
+          {/* User Menu */}
+          {!isLoggedIn ? (
+            <Link to="/userlogin">
+              <motion.div whileHover={{ scale: 1.2 }}>
+                <FaUser className="cursor-pointer" />
+              </motion.div>
+            </Link>
+          ) : (
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 bg-white text-green-700 px-3 py-1 rounded-lg"
+              >
+                <FaUserCircle size={22} />
+                <span className="hidden md:block">{user?.name || "User"}</span>
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white text-gray-700 shadow-lg rounded-lg">
+                  <ul className="py-2">
+                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Profile</li>
+                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Order History</li>
+                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">Track Order</li>
+                    <li
+                      onClick={handleLogout}
+                      className="px-4 py-2 text-red-500 hover:bg-red-100 cursor-pointer"
+                    >
+                      Logout
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Hamburger - Mobile */}
@@ -101,15 +156,8 @@ const Navbar = () => {
           <GiHamburgerMenu />
           Browse All Categories
         </button>
-        {[
-          { label: "Home", path: "/" },
-          { label: "Shop", path: "/ProductGrid" },
-          { label: "Fruits", path: "/fruits" },
-          { label: "Vegetable", path: "/vegetables" },
-          { label: "Beverages", path: "/beverages" },
-          { label: "About Us", path: "/about" },
-          { label: "Blogs", path: "/blogs" },
-        ].map((item, i) => (
+
+        {navLinks.map((item, i) => (
           <Link
             key={i}
             to={item.path}
@@ -118,13 +166,9 @@ const Navbar = () => {
             {item.label}
           </Link>
         ))}
-
-        {/* <div className="ml-auto text-yellow-400 bg-transparent">
-          <UserLocation />
-        </div> */}
       </motion.nav>
 
-      {/* Mobile Menu with Framer Motion Animation */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -150,20 +194,40 @@ const Navbar = () => {
                 <FaSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-200" />
               </div>
 
-              {["Home", "Shop", "Fruits", "Vegetable", "Beverages", "About Us", "Blogs"].map((item, i) => (
-                <Link key={i} to="/" className="hover:text-yellow-400 transition">
-                  {item}
+              {navLinks.map((item, i) => (
+                <Link
+                  key={i}
+                  to={item.path}
+                  className="hover:text-yellow-400 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
                 </Link>
               ))}
-              <Link to="/userlogin" className="hover:text-yellow-400">Login</Link>
-              {/* <select className="text-yellow-400 bg-transparent">
-          {/* <UserLocation/> 
-        </select> */}
+
+              {!isLoggedIn ? (
+                <Link
+                  to="/userlogin"
+                  className="block hover:text-green-200"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Login
+                </Link>
+              ) : (
+                <>
+                  <span className="block font-bold">{user?.name || "User"}</span>
+                  <button
+                    onClick={handleLogout}
+                    className="block text-red-400 hover:text-red-200"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
     </header>
   );
 };
